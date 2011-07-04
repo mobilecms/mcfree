@@ -322,12 +322,12 @@ CREATE TABLE IF NOT EXISTS `a_private_messages` (
   `user_id` int(11) NOT NULL,
   `user_from_id` int(11) NOT NULL,
   `user_to_id` int(11) NOT NULL,
-  `message` varchar(300) NOT NULL,
+  `message` text NOT NULL,
   `folder` enum('new','inbox','outbox','saved') NOT NULL default 'new',
   `time` int(11) NOT NULL,
   PRIMARY KEY  (`message_id`),
   KEY `user_id` (`user_id`,`user_from_id`,`user_to_id`)
-) ENGINE=MyISAM  DEFAULT CHARSET=utf8 AUTO_INCREMENT=2 ;
+) ENGINE=MyISAM  DEFAULT CHARSET=utf8;
 //=====================================//
 CREATE TABLE IF NOT EXISTS `a_rating_logs` (
   `id` int(11) NOT NULL auto_increment,
