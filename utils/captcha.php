@@ -1,75 +1,102 @@
 <?php
+
+/**
+ * MobileCMS
+ * Content Management System for creation of mobile sites.
+ * @package MobileCMS
+ * @author http://mobilecms.ru/mobilecms/authors.php
+ * @copyright Copyright (c) 2006-2011, MobileCMS
+ * @license http://mobilecms.ru/mobilecms/license.php
+ * @link http://mobilecms.ru/
+ */
+
 ini_set('session.save_path', '../tmp/');
 session_name('sid');
 session_start();
 
-switch (@$_GET['a']) {
-	case 'check':
-		$_SESSION['captcha_code'] = strval(rand(1000, 9999));
-		echo '<form action="captcha.php" method="get">'.
-			'<input type="hidden" name="a" value="submit">'.
-			'<label for="code">Код подтверждения:</label>'.
-			'<input type="text" id="code" name="code" size="4" maxlength="4">'.
-			'<img align="absmiddle" src="captcha.php?a=image">'.
-			'<input type="submit" value="Go">'.
-			'</form>';
-	break;
-	case 'submit':
-		//проверка кода
-		if (empty($_GET['code']) or empty($_SESSION['code'])) {
-			echo 'Вы не указали код подтверждения';
-		} elseif ($_GET['code'] != $_SESSION['code']) {
-			echo 'Код подтверждения не совпадает';
-		} else {
-			echo 'Всё Ok!';
-		}
-	break;
-	default:
-		$im = imagecreate (80, 20) or die ("Cannot initialize new GD image stream!");
-		$bg = imagecolorallocate ($im, 232, 238, 247);
-		$char = $_SESSION['captcha_code'];
+$data = array(
+	// Ширина изображения
+	'width'             =>  '100',
+	// Высота изображения
+	'height'            =>  '40',
+	// Размер шрифта
+	'font_size'         =>  '10',
+	// Кол-во символов для ввода
+	'let_amount'        =>  '4',
+	// Кол-во "помех" на фоне
+	'fon_let_amount'    =>  '0',
+	// Папка со шрифтами
+	'path_fonts'        =>  '../utils/fonts/',
+	// Символы на изображении
+	'letters'           =>  array('0', '2', '3', '4', '5', '6', '7', '9'),
+	// Используемые цвета
+	'colors'            =>  array('10', '30', '50', '70', '90', '110', '130', '150', '170', '190', '210')
+);
 
-		//создаём шум на фоне
-		for ($i=0; $i<=128; $i++) {
-			$color = imagecolorallocate ($im, rand(0,255), rand(0,255), rand(0,255)); //задаём цвет
-			imagesetpixel($im, rand(2,80), rand(2,20), $color); //рисуем пиксель
-		}
+// Создание изображения
+$src = imagecreatetruecolor($data['width'], $data['height']);
+$fon = imagecolorallocate($src, 255, 255, 255);
 
-		//выводим символы кода
-		for ($i = 0; $i < strlen($char); $i++) {
-			$color = imagecolorallocate ($im, rand(0,255), rand(0,128), rand(0,255)); //задаём цвет
-			$x = 5 + $i * 20;
-			$y = rand(1, 6);
-			imagechar ($im, 5, $x, $y, $char[$i], $color);
-		}
+imagefill($src, 0, 0, $fon);
 
-		/*/упрощённый вариант
-		$color = imagecolorallocate($img, 0, 0, 0);
-		imagestring($im, 3, 5, 3, $char, $color);*/
+// Выбор шрифта
+$fonts = array();
+$dir = opendir($data['path_fonts']);
 
-		//антикеширование
-		header("Expires: Mon, 26 Jul 1997 05:00:00 GMT");
-		header("Cache-Control: no-store, no-cache, must-revalidate");
-		header("Cache-Control: post-check=0, pre-check=0", false);
-		header("Pragma: no-cache");
-
-		//создание рисунка в зависимости от доступного формата
-		if (function_exists("imagepng")) {
-			header("Content-type: image/png");
-			imagepng($im);
-		}
-		elseif (function_exists("imagegif")) {
-			header("Content-type: image/gif");
-			imagegif($im);
-		}
-		elseif (function_exists("imagejpeg")) {
-			header("Content-type: image/jpeg");
-			imagejpeg($im);
-		}
-		else {
-			die("No image support in this PHP server!");
-		}
-		imagedestroy ($im);
-		break;
+while($fontName = readdir($dir)) {
+	if ($fontName != '.' && $fontName != '..') $fonts[] = $fontName;
 }
+
+closedir($dir);
+
+// Нанесение "помех"
+for($i=0; $i<$data['fon_let_amount']; $i++) {
+    $color = imagecolorallocatealpha($src, rand(0, 255), rand(0, 255), rand(0, 255), 100);
+    $font = $data['path_fonts'] . $fonts[rand(0, sizeof($fonts)-1)];
+    $letter = $data['letters'][rand(0, sizeof($data['letters'])-1)];
+    $size = rand($data['font_size']-2, $data['font_size']+2);
+    imagettftext($src, $size, rand(0, 45), rand($data['width']*0.1, $data['width']-$data['width']*0.1), rand($data['height']*0.2, $data['height']), $color, $font, $letter);
+}
+
+// Нанесение символов
+for($i=0; $i<$data['let_amount']; $i++) {
+    $color = imagecolorallocatealpha($src, $data['colors'][rand(0, sizeof($data['colors'])-1)], $data['colors'][rand(0, sizeof($data['colors'])-1)], $data['colors'][rand(0, sizeof($data['colors'])-1)], rand(20,40));
+    $font = $data['path_fonts'] . $fonts[rand(0, sizeof($fonts)-1)];
+    $letter = $data['letters'][rand(0, sizeof($data['letters'])-1)];
+    $size = rand($data['font_size']*2.1-2, $data['font_size']*2.1+2);
+    $x = ($i+1)*$data['font_size'] + rand(4, 7);
+    $y = (($data['height']*2)/3) + rand(0, 5);
+    $cod[] = $letter;
+	imagettftext($src, $size, rand(0, 15), $x, $y, $color, $font, $letter);
+}
+
+// Антикеширование
+header("Expires: Mon, 26 Jul 1997 05:00:00 GMT");
+header("Cache-Control: no-store, no-cache, must-revalidate");
+header("Cache-Control: post-check=0, pre-check=0", false);
+header("Pragma: no-cache");
+
+// Создание рисунка в зависимости от доступного формата
+if (function_exists("imagepng")) {
+	header("Content-type: image/png");
+	imagepng($src);
+}
+elseif (function_exists("imagegif")) {
+	header("Content-type: image/gif");
+	imagegif($src);
+}
+elseif (function_exists("imagejpeg")) {
+	header("Content-type: image/jpeg");
+	imagejpeg($src);
+}
+else {
+	die("No image support in this PHP server!");
+}
+
+// Записываем код в сессию
+$_SESSION['code'] = implode('', $cod);
+
+// Удаляем изображение
+imagedestroy($src);
+		
 ?>
