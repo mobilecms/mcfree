@@ -20,6 +20,9 @@ if(file_get_contents(ROOT .'data_files/day.dat') != date('d')) {
 	file_put_contents(ROOT .'data_files/day.dat', date('d'));
 	$db = Registry::get('db');
 
+	// Очистка таблицы гостей
+    $db->query("DELETE FROM #__guest WHERE last_time < UNIX_TIMESTAMP() - 600");
+
 	# Чистим tmp/
 	main::tmp_clear();
 	# Сборка мусора в загрузках
@@ -27,4 +30,5 @@ if(file_get_contents(ROOT .'data_files/day.dat') != date('d')) {
 	# Удаление старых логов рейтинга
 	$db->query("DELETE FROM #__rating_logs WHERE time < UNIX_TIMESTAMP() - 7 * 86400");
 }
+
 ?>
