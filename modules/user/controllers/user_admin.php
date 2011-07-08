@@ -30,6 +30,28 @@ class User_Admin_Controller extends Controller {
 	public function action_index() {
 		$this->action_list_users();
 	}
+	
+	/**
+	* Конфигурация модуля
+	*/
+	public function action_config() {
+		$_config = $this->config['user'];
+
+		if (isset($_POST['submit'])) {
+			main::is_demo();
+			$_config = $_POST;
+
+			main::config($_config, 'user', $this->db);
+
+			a_notice('Настройки модуля успешно изменены!', a_url('user/admin/config'));
+		}
+		
+		$this->tpl->assign(array(
+			'_config' => $_config
+		));
+
+		$this->tpl->display('config');
+	}
 
 	/**
 	* Удаление пользователя
@@ -164,23 +186,28 @@ class User_Admin_Controller extends Controller {
 	* Листинг пользователей
 	*/
 	public function action_list_users() {
-		$this->per_page = 20;
+	    // Кол-во пользователей на страницу
+		$this->per_page = $this->config['user']['user_per_page_panel'];
 
-		# Получение данных
+		// Получение данных
 		$sql = "SELECT SQL_CALC_FOUND_ROWS * FROM #__users
 			WHERE 1 = 1 AND user_id > 0 ";
-		if(!empty($_GET['user_id'])) $sql .= " AND user_id = ". intval($_GET['user_id']);
+			
+		if (!empty($_GET['user_id'])) $sql .= " AND user_id = ". intval($_GET['user_id']);
 		else {
-			if(!empty($_GET['login'])) $sql .= " AND username LIKE '%". a_safe($_GET['login']) ."%'";
-			if(!empty($_GET['status'])) $sql .= " AND status = '". a_safe($_GET['status']) ."'";
+			if (!empty($_GET['username'])) $sql .= " AND username LIKE '%". a_safe($_GET['username']) ."%'";
+			if (!empty($_GET['status'])) $sql .= " AND status = '". a_safe($_GET['status']) ."'";
 		}
+		
+		if (str_safe($_GET['type']) == 'online') $sql .= " AND last_visit > UNIX_TIMESTAMP() - 600 ";
+		
 		$sql .= " ORDER BY user_id ". ($_GET['sort'] == 'desc' ? 'DESC' : 'ASC') ." LIMIT $this->start, $this->per_page";
 
 		$users = $this->db->get_array($sql);
 		$total = $this->db->get_one("SELECT FOUND_ROWS()");
 
-		# Пагинация
-		$pg_conf['base_url'] = a_url('user/admin', 'status='. $_GET['status'] .'&amp;login='. $_GET['username'] .'&amp;user_id='. $_GET['user_id'] .'&amp;sort='. $_GET['sort'] .'&amp;start=');
+		// Пагинация
+		$pg_conf['base_url'] = a_url('user/admin/list_users', 'status='. str_safe($_GET['status']) .'&amp;login='. str_safe($_GET['username']) .'&amp;user_id='. intval($_GET['user_id']) .'&amp;sort='. str_safe($_GET['sort']) .'&amp;start=');
 		$pg_conf['total_rows'] = $total;
 		$pg_conf['per_page'] = $this->per_page;
 
@@ -191,10 +218,46 @@ class User_Admin_Controller extends Controller {
 			'users' => $users,
 			'total' => $total,
 			'db'    => $this->db,
-			'pagination' => $pg->create_links()
+			'start' => $this->start,
+			'pagination' => $pg->create_links(),
+			'action' => 'list'
 		));
 
 		$this->tpl->display('list_users');
+	}
+	
+	/**
+	* Листинг гостей
+	*/
+	public function action_list_guests() {
+	    // Кол-во пользователей на страницу
+		$this->per_page = $this->config['user']['user_per_page_panel'];
+
+		// Получение данных
+		$sql = "SELECT SQL_CALC_FOUND_ROWS * FROM #__guest
+			WHERE 1 = 1 AND last_time > UNIX_TIMESTAMP() - 600
+		ORDER BY last_time DESC LIMIT $this->start, $this->per_page";
+
+		$guests = $this->db->get_array($sql);
+		$total = $this->db->get_one("SELECT FOUND_ROWS()");
+
+		// Пагинация
+		$pg_conf['base_url'] = a_url('user/admin/list_guests', 'start=');
+		$pg_conf['total_rows'] = $total;
+		$pg_conf['per_page'] = $this->per_page;
+
+		a_import('libraries/pagination');
+		$pg = new CI_Pagination($pg_conf);
+
+		$this->tpl->assign(array(
+			'guests' => $guests,
+			'total' => $total,
+			'db'    => $this->db,
+			'start' => $this->start,
+			'pagination' => $pg->create_links()
+		));
+
+		$this->tpl->display('list_guests');
 	}
 }
 ?>
