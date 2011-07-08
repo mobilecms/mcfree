@@ -104,6 +104,28 @@ abstract class Controller {
 
 		define('USER_ID', $this->user['user_id']);
 		$this->tpl->assign('user', $this->user);
+		
+		// Собираем информацию о госте
+		if (USER_ID == -1) {
+		    $ua = explode('(', $_SERVER['HTTP_USER_AGENT']);
+
+            // Проверяем наличие пользователя в списке
+			if ($guest = $this->db->get_row("SELECT * FROM #__guest WHERE ip = '". a_safe($_SERVER['REMOTE_ADDR']) ."' AND ua = '". a_safe($ua[0]) ."'")) {
+				// Обновляем дату последнего посещения
+                $this->db->query("UPDATE #__guest SET
+                	last_time = UNIX_TIMESTAMP()
+              		WHERE id = '". $guest['id'] ."'
+              	");
+			}
+			else {
+				// Записываем пользователя в базу
+                $this->db->query("INSERT INTO #__guest SET
+                    ip = '". a_safe($_SERVER['REMOTE_ADDR']) ."',
+                    ua = '". a_safe($ua[0]) ."',
+                	last_time = UNIX_TIMESTAMP()
+              	");
+			}
+		}
 
 		# Обновляем время последнего посещения
 		if(USER_ID != -1) $this->db->query("UPDATE #__users SET last_visit = UNIX_TIMESTAMP() WHERE user_id = '". USER_ID ."'");
