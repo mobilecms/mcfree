@@ -27,6 +27,22 @@ function a_import($file) {
 
 }
 
+/**
+* Перенаправление
+*/
+function redirect($url) {
+	header('Location: '. URL . $url);
+	exit;
+}
+
+/**
+ * Проверка авторизации пользователя
+ */
+function is_user() {
+	if (USER_ID != -1) return TRUE;
+	else return FALSE;
+}
+
 
 /**
 * Вывод ошибки
@@ -288,4 +304,45 @@ function highlight($str) {
 	$str = highlight_string($str, true);
 	return '<div style="border: 1px silver solid; margin: 10px; padding-left: 5px; background-color: #f1f2f1;">'.$str.'</div>';
 }
+
+
+/**
+ * Вывод проверочного кода (капчи)
+ */
+function captcha() {
+	echo '<script>
+	function captcha_reload() {
+		document.getElementById(\'captcha\').src = "../utils/captcha.php";
+	}
+	</script>';
+
+	echo '<img id="captcha" src="../utils/captcha.php" alt="captcha" /><br />
+	<a href="javascript:captcha_reload();">Обновить картинку</a><br />';
+}
+
+/**
+* Обработка содержимого строки
+*/
+function str_safe($str) {
+	return htmlspecialchars(trim($str), ENT_NOQUOTES);
+}
+
+/**
+* Генерация URL адреса
+*/
+function url($path, $query = '', $header = FALSE) {
+	if (!empty($query)) {
+		if ($header) $query = '&'. $query;
+		else $query = '&amp;'. $query;
+	}
+	
+	$url = URL . $path . EXT .'?'. SID . $query;
+	$url = str_replace('?&amp;', '?', $url);
+	$url = str_replace('?&', '?', $url);
+
+	if (substr($url, -1) == '?') $url = substr($url, 0, -1);
+
+	return $url;
+}
+
 ?>
