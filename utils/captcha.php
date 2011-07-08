@@ -94,7 +94,7 @@ else {
 }
 
 // Записываем код в сессию
-$_SESSION['code'] = implode('', $cod);
+$_SESSION['captcha_code'] = implode('', $cod);
 
 // Удаляем изображение
 imagedestroy($src);
