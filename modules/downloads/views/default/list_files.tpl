@@ -4,7 +4,7 @@
 
 <div class="block">
 <?php if($directory['user_files'] == 'yes'): ?>
-<a href="<?php echo a_url('downloads/add_file', 'directory_id='. $directory['directory_id']) ?>">Загрузить ваш файл</a><br />
+<a href="<?php echo URL .'downloads/'. $directory['directory_id'] .'/add' ?>">Добавить файл</a><br />
 <?php endif; ?>
 <?php if($action != 'new_files'): ?>
 <a href="<?php echo a_url('downloads/list_files', 'action=new_files&amp;directory_id='. $directory['directory_id']) ?>">Новые файлы</a><br />
