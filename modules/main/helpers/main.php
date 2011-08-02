@@ -396,11 +396,11 @@ class main {
 			break;
 
 			case 'gif':
-				imagegif($pic_to_save, $path_to_save, $quality);
+				imagegif($pic_to_save, $path_to_save);
 			break;
 
 			case 'png':
-				imagepng($pic_to_save, $path_to_save, $quality);
+				imagepng($pic_to_save, $path_to_save);
 	        break;
 
 			default:
