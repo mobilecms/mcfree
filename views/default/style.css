@@ -5,6 +5,8 @@ body {
 	margin: 0;
 	font: 12px Arial;
 	background: none repeat scroll 0 0;
+	margin: auto;
+	max-width: 400px;
 }
 
 a:link, a:active, a:visited {
@@ -117,6 +119,7 @@ input[type="submit"]:hover {
 .main {
 	margin-top: 1px;
 	margin-bottom: 1px;
+	padding-top: 3px;
 	border-top: 1px solid #e0e0e0;
 	border-bottom: 1px solid #e0e0e0;
 	background: #f8f8f8;
