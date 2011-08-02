@@ -1,20 +1,17 @@
 <?php
 /**
- * Ant0ha's project
+ * MobileCMS
  *
- * @package
- * @author Anton Pisarenko <wapwork@bk.ru>
- * @copyright Copyright (c) 2006 - 2010, Anton Pisarenko
- * @license http://ant0ha.ru/license.txt
- * @link http://ant0ha.ru
+ * Open source content management system for mobile sites
+ *
+ * @author MobileCMS Team <support@mobilecms.ru>
+ * @copyright Copyright (c) 2011, MobileCMS Team
+ * @link http://mobilecms.ru Official site
+ * @license http://opensource.org/licenses/gpl-license.php GNU Public License
  */
+ 
+defined('IN_SYSTEM') or die('<b>Access error</b>');
 
-defined('IN_SYSTEM') or die('<b>403<br />Запрет доступа!</b>');
-
-//---------------------------------------------
-/**
- * Хелпер основного модуля
- */
 class main {
 	/**
 	* Конфигурация для модулей
@@ -322,57 +319,100 @@ class main {
 	}
 
 	/**
-	* Простая функция для изменения форматов и размеров изображений
-	*/
-	public static function image_resize($infile, $outfile, $neww = 0, $newh = 0, $quality = 90) {
-		list($oldw, $oldh, $type)= getimagesize($infile);
-		if($neww == 0) {
-			$neww = $oldw;
-			$newh = $oldh;
+	 * Изменение размера изображений
+	 *
+	 * Пропорциональное изменение размера производится в случае,
+	 * если отсутствует один из параметров высоты или ширины изображения
+	 *
+	 * @param string $path_to_file путь к существующему изображению
+	 * @param string $path_to_save путь для сохранения
+	 * @param int $width ширина изображения
+	 * @param int $height высота изображения
+	 * @param int $quality качество изображения в процентах
+	 * @return boolean
+	 */
+    public static function image_resize($path_to_file, $path_to_save, $width, $height = 0, $quality = 100) {
+		// Проверка наличия изображения на сервере
+		if ( ! file_exists($path_to_file)) return FALSE;
+
+		// Получение информации о изображении
+		$info = getimagesize($path_to_file);
+
+		// Формат изображения
+    	$format = strtolower(substr($info['mime'], strpos($info['mime'], '/') + 1));
+
+		// Выбор функции для изображения
+    	$picfunc = 'imagecreatefrom'. $format;
+
+		// Старая ширина изображения
+        $old_width = $info[0];
+
+        // Старая высота изображения
+		$old_height = $info[1];
+
+        // Вычисление горизонтального соотношения
+        $horizontal = $width / $old_width;
+
+        // Вычисление вертикального соотношения
+        $vertical = $height / $old_height;
+
+        // Пропорциональное вычисление параметров
+        if ($height == 0) {
+        	$vertical = $horizontal;
+			$height = $vertical * $old_height;
 		}
-		elseif($newh == 0 && $neww > 0) {
-			$newh = $oldh * $neww / $oldw;
+		elseif ($width == 0) {
+            $horizontal = $vertical;
+			$width = $horizontal * $old_width;
 		}
 
-		switch($type) {
-			case 1:
-				$function = 'imagecreatefromgif';
-				break;
-			case 2:
-				$function = 'imagecreatefromjpeg';
-				break;
-			case 3:
-				$function = 'imagecreatefrompng';
-				break;
-		 	default:
-		 		a_error('Не удалось определить формат изображения!');
-		}
+		// Формирование размера изображения
+		$ratio = min($horizontal, $vertical);
 
-		$im = $function($infile);
-		$im1 = imagecreatetruecolor($neww, $newh);
-		imagecopyresampled($im1, $im, 0, 0, 0, 0, $neww, $newh, imagesx($im), imagesy($im));
+		// Необходимость пропорционального изменения
+		if ($horizontal == $ratio) $use_horizontal = TRUE;
+		else $use_horizontal = FALSE;
 
-		# определяем формат получаемого файла
-		$ext = array_pop(explode('.', $outfile));
+		$new_width = $use_horizontal ? $width : floor($old_width * $ratio);
+		$new_height = ! $use_horizontal ? $height : floor($old_height * $ratio);
+		$new_left = $use_horizontal ? 0 : floor(($width - $new_width) / 2);
+		$new_top = ! $use_horizontal ? 0 : floor(($height - $new_height) / 2);
+
+		$pic_to_src = $picfunc($path_to_file);
+
+		// Создание изображения в памяти
+    	$pic_to_save = imagecreatetruecolor($width, $height);
+
+    	// Нанесение старого изображения на новое
+		imagecopyresampled($pic_to_save, $pic_to_src, $new_left, $new_top, 0, 0, $new_width, $new_height, $old_width, $old_height);
+
+		// Определение формата изображения на выходе
+		$ext = array_pop(explode('.', $path_to_save));
 
 		switch($ext) {
 			case 'jpg':
 			case 'jpeg':
-				imagejpeg($im1, $outfile, $quality);
-				break;
+				imagejpeg($pic_to_save, $path_to_save, $quality);
+			break;
+
 			case 'gif':
-				imagegif($im1, $outfile, $quality);
-				break;
+				imagegif($pic_to_save, $path_to_save, $quality);
+			break;
+
 			case 'png':
-				imagepng($im1, $outfile, $quality);
-	        	break;
+				imagepng($pic_to_save, $path_to_save, $quality);
+	        break;
+
 			default:
-				a_error('Не верно указан получаемый файл');
-	      		break;
+				return FALSE;
+	      	break;
 		}
 
-		imagedestroy($im);
-		imagedestroy($im1);
+		// Очистка памяти
+    	imagedestroy($pic_to_src);
+    	imagedestroy($pic_to_save);
+
+    	return TRUE;
 	}
 
 	/**
