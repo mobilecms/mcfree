@@ -207,6 +207,10 @@ a {
 	text-decoration: none;
 }
 
+a:hover, a:focus {
+	text-decoration: underline;
+}
+
 table {
 	width: 700px;
 	margin: 10px;
