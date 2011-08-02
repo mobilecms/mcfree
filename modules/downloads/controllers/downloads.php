@@ -89,7 +89,7 @@ class Downloads_Controller extends Controller {
 						previews,
 						(SELECT 0) AS position
 						FROM #__downloads_files
-						WHERE
+						WHERE status = 'active' AND
 						name LIKE '%". a_safe($_GET['search_word']) ."%' ";
 
 				if($directory_id != 0) $sql .= " AND path_to_file LIKE '%/". $directory_id ."/%' ";
@@ -119,7 +119,7 @@ class Downloads_Controller extends Controller {
 						previews,
 						(SELECT 0) AS position
 						FROM #__downloads_files
-						WHERE 1 = 1 ";
+						WHERE status = 'active' AND 1 = 1 ";
 
 				if($directory_id != 0) $sql .= " AND path_to_file LIKE '%/". $directory_id ."/%' ";
 
