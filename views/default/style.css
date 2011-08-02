@@ -28,6 +28,7 @@ p {
 
 input, textarea, select, .auth a, .menu, .title, .error {
 	border-radius: 4px;
+	font: 13px Arial;
 }
 
 input, textarea, select {
