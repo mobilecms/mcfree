@@ -1,23 +1,22 @@
 <?php
 /**
- * Ant0ha's project
+ * MobileCMS
  *
- * @package
- * @author Anton Pisarenko <wapwork@bk.ru>
- * @copyright Copyright (c) 2006 - 2010, Anton Pisarenko
- * @license http://ant0ha.ru/license.txt
- * @link http://ant0ha.ru
+ * Open source content management system for mobile sites
+ *
+ * @author MobileCMS Team <support@mobilecms.ru>
+ * @copyright Copyright (c) 2011, MobileCMS Team
+ * @link http://mobilecms.ru Official site
+ * @license http://opensource.org/licenses/gpl-license.php GNU Public License
  */
 
-//---------------------------------------------
-
-# Папка с файлами загрузок
+// Папка с файлами загрузок
 define('DOWNLOADS_DIRECTORY', 'files/downloads/');
-# Максимальный размер файла для скачивания через force_download
+// Максимальный размер файла для скачивания через force_download
 define('FORCE_DOWNLOAD_MAX_FILESIZE', 0);
 
 /**
- * Контроллер пользовательской части загруз центра
+ * Контроллер пользовательской части загруз-центра
  */
 class Downloads_Controller extends Controller {
 	/**
@@ -459,84 +458,155 @@ class Downloads_Controller extends Controller {
 	}
 
 	/**
-	* Выгрузка файла пользователя
+	* Выгрузка файла пользователем
 	*/
 	public function action_add_file() {
-		if(USER_ID == -1) a_notice('Гости не имеют права загружать файлы', a_url('user/login'));
+		// Запрет выгрузки гостям
+		if (USER_ID == -1) a_error('Для выгрузки файлов на сайт необходимо <a href="'. URL .'login">войти</a> или <a href="'. URL .'registration">зарегистрироваться</a>');
+		
+		// Проверка действия
+		if ($_GET['action'] != 'add' && $_GET['action'] != 'edit' && $_GET['action'] != 'delete') a_error('Не выбрано действие');
+		
+		// Проверка директории
+		if ( ! $directory = $this->db->get_row("SELECT * FROM #__downloads_directories WHERE directory_id = '". intval($_GET['directory_id']) ."' AND user_files = 'yes'")) a_error('Папка не найдена, либо не предназначена для выгрузки файлов пользователями в нее');
+		
+		$directory_path = downloads::get_path($directory['directory_id'], $this->db);
+		$navigation = downloads::get_namepath($directory_path, ' &raquo; ');
 
-		if(!$directory = $this->db->get_row("SELECT * FROM #__downloads_directories WHERE directory_id = '". intval($_GET['directory_id']) ."' AND user_files = 'yes'"))
-			a_error('Папка не найдена, либо она не предназначена для загрузки файлов в неё');
+		if ($directory['directory_id'] > 0) $navigation .= ( ! empty($navigation) ? ' &raquo; ' : '') .'<a href="'. URL .'downloads/'. $directory['directory_id'] .'">'. $directory['name'] .'</a>';
+		
+		switch($_GET['action']) {
+			case 'add':
+				$action = 'add';
+				$title = 'Добавление файла';
+			
+			    // Обработка формы выгрузки файла
+				if ($_POST['submit']) {
+				    // Фильтрация данных
+				    $name = htmlspecialchars(trim($_POST['name']));
+				    $about = htmlspecialchars(trim($_POST['about']));
+				
+					// Массивс информацией о файле
+					$file = array();
+					
+					// Проверка корректности данных
+					if ( ! empty($name) && main::strlen($name) > 32) $this->error .= 'Имя файла не должно быть длинее 32 символов<br />';
+					
+					if ( ! empty($about) && main::strlen($about) > 5000) $this->error .= 'Описание не должно быть длинее 5000 символов<br />';
+					
+					// Получение информации о файле
+					if ( ! empty($_FILES['file_upload']['tmp_name'])) {
+						$type = 'upload';
+						$file['real_name'] = $_FILES['file_upload']['name'];
+						$file['file_ext'] = array_pop(explode('.', $file['real_name']));
+						$file['filesize'] = filesize($_FILES['file_upload']['tmp_name']);
+					} else if ( ! empty($_POST['file_import']) && $_POST['file_import'] != 'http://') {
+						$type = 'import';
+						$file['real_name'] = basename($_POST['file_import']);
+						$file['file_ext'] = array_pop(explode('.', $file['real_name']));
+						$file['filesize'] = downloads::get_filesize($_POST['file_import']);
+					} else $this->error = 'Укажите загружаемый файл<br />';
+					
+					// Проверка типа файла
+					if ( ! strstr(';'. $this->config['downloads']['allowed_filetypes'] .';', ';'. $file['file_ext'] .';') && $type) $this->error .= 'Вы пытаетесь загрузить запрещенный тип файла<br />';
 
-		if(isset($_POST['submit'])) {
-			$file = array();
+					// Проверка размера файла
+					if (($file['filesize'] > $this->config['downloads']['max_filesize'] * 1048576) || $file['filesize'] === FALSE) $this->error .= 'Размер загружаемого файла превышает допустимый размер ('. $this->config['downloads']['max_filesize'] .' Mb)<br />';
+					
+					// Сохранение файла
+					if ( ! $this->error) {
+                        // Получение ID файла
+						$this->db->query("INSERT INTO #__downloads_files SET file_id = 'NULL'");
+						$file_id = $this->db->insert_id();
 
-			if(!empty($_FILES['file_upload']['tmp_name'])) {
-				$type = 'upload';
-				$file['real_name'] = $_FILES['file_upload']['name'];
-				$file['file_ext'] = array_pop(explode('.', $file['real_name']));
-				$file['filesize'] = filesize($_FILES['file_upload']['tmp_name']);
-			}
-			elseif(!empty($_POST['file_import']) && $_POST['file_import'] != 'http://') {
-				$type = 'import';
-				$file['real_name'] = basename($_POST['file_import']);
-				$file['file_ext'] = array_pop(explode('.', $file['real_name']));
-				$file['filesize'] = downloads::get_filesize($_POST['file_import']);
-			}
-			else $this->error = 'Укажите загружаемый файл<br />!';
+						$directory_path = downloads::get_path($directory['directory_id'], &$this->db);
+		   				$realpath = downloads::get_realpath($directory_path);
+						$realpath = ($realpath != '' ? $realpath . '/' :  '') . ($directory['directory_id'] == 0 ? '' : $directory['directory_id'] . '/');
 
-			if(!strstr(';'. $this->config['downloads']['allowed_filetypes'] .';', ';'. $file['file_ext'] .';'))
-				$this->error .= 'Вы пытаетесь загрузить запрещенный тип файла<br />';
+						// Создание папки для файла
+						mkdir(ROOT . DOWNLOADS_DIRECTORY . $realpath . $file_id);
+   						chmod(ROOT . DOWNLOADS_DIRECTORY . $realpath . $file_id, 0777);
 
-			if(($file['filesize'] > $this->config['downloads']['max_filesize'] * 1048576) || $file['filesize'] === false)
-				$this->error .= 'Размер загружаемого файла превышает допустимый размер ('. $this->config['downloads']['max_filesize'] .' Mb)<br />';
+   						$path_to_file = DOWNLOADS_DIRECTORY . ($realpath != '' ? $realpath : '') . $file_id;
 
-			if(!$this->error) {
-				# Получаем ID файла
-				$this->db->query("INSERT INTO #__downloads_files SET file_id = 'NULL'");
-				$file_id = $this->db->insert_id();
+   						if ($type == 'upload') {
+   							$file_path = ROOT . $path_to_file .'/'. $_FILES['file_upload']['name'];
+							copy($_FILES['file_upload']['tmp_name'], $file_path);
+						} else {
+							$file_path = ROOT . $path_to_file .'/'. basename($_POST['file_import']);
+							copy($_POST['file_import'], $file_path);
+						}
+						
+						// Работа со скриншотом к основному файлу
+						if ( ! empty($_FILES['screen1']['tmp_name'])) {
+							$screen_path = ROOT . $path_to_file .'/'. $_FILES['screen1']['name'];
 
-				$directory_path = downloads::get_path($directory['directory_id'], &$this->db);
-		   		$realpath = downloads::get_realpath($directory_path);
-				$realpath = ($realpath != '' ? $realpath . '/' :  '') . ($directory['directory_id'] == 0 ? '' : $directory['directory_id'] . '/');
+							if (copy($_FILES['screen1']['tmp_name'], $screen_path)) {
+							    if ($this->config['downloads']['screens_width'] > 0) {
+									main::image_resize($screen_path, $screen_path, intval($this->config['downloads']['screens_width']));
+								}
 
-				# Создаем папку для файла
-				mkdir(ROOT . DOWNLOADS_DIRECTORY . $realpath . $file_id);
-   				chmod(ROOT . DOWNLOADS_DIRECTORY . $realpath . $file_id, 0777);
+								$file['screen1'] = $_FILES['screen1']['name'];
+							}
+						} else if ( ! empty($_POST['screen1']) && $_POST['screen1'] != 'http://') {
+							$import_file_path = fm::get_real_file_path($_POST['screen_1']);
+							$import_file_name = basename($import_file_path);
+							$screen_path = ROOT . $path_to_file .'/'. $import_file_name;
 
-   				$path_to_file = DOWNLOADS_DIRECTORY . ($realpath != '' ? $realpath : '') . $file_id;
+							if (copy($import_file_path, $screen_path)) {
+							    if ($this->config['downloads']['screens_width'] > 0) {
+									main::image_resize($screen_path, $screen_path, intval($this->config['downloads']['screens_width']));
+								}
 
-   				if($type == 'upload') {
-   					$file_path = ROOT . $path_to_file .'/'. $_FILES['file_upload']['name'];
-					copy($_FILES['file_upload']['tmp_name'], $file_path);
+								$file['screen1'] = $import_file_name;
+							}
+						}
+						
+						$file['name'] = $_POST['name'];
+						$file['about'] = $_POST['about'];
+						$file['status'] = 'moderate';
+						$file['user_id'] = USER_ID;
+						$file['path_to_file'] = $path_to_file;
+						$file['directory_id'] = $directory['directory_id'];
+
+						// Выполнение действий над определенными типами файлов
+						$file = downloads::filetype_actions($file);
+
+						// Изменение файла в базе
+						downloads::update_file(&$this->db, $file_id, $file);
+
+						a_notice('Файл успешно загружен, он будет доступен для скачивания другим пользователям после прохождения модерации', URL .'downloads/'. $directory['directory_id']);
+					}
 				}
-				else {
-					$file_path = ROOT . $path_to_file .'/'. basename($_POST['file_import']);
-					copy($_POST['file_import'], $file_path);
-				}
-
-				$file['name'] = $_POST['name'];
-				$file['about'] = $_POST['about'];
-				$file['status'] = 'moderate';
-				$file['user_id'] = USER_ID;
-				$file['path_to_file'] = $path_to_file;
-				$file['directory_id'] = $directory['directory_id'];
-
-				# Выполняем действия над определенными типами файлов
-				$file = downloads::filetype_actions($file);
-
-				# Изменяем файл в базе
-				downloads::update_file(&$this->db, $file_id, $file);
-
-				a_notice('Файл успешно загружен, он будет доступен для скачивания другими пользователями после прохождения модерации', URL .'downloads/'. $directory['directory_id']);
-			}
+			break;
+			
+			case 'edit':
+			    $action = 'edit';
+				$title = 'Изменение файла';
+			
+			    // Проверка файла
+			    if ( ! $file = $this->db->get_row("SELECT * FROM #__downloads_files WHERE file_id = '". intval($_GET['file_id']) ."' AND user_id = '". USER_ID ."'")) a_error('Файл не найден');
+			break;
+			
+			case 'delete':
+			    $action = 'delete';
+				$title = 'Удаление файла';
+			
+			    // Проверка файла
+			    if ( ! $file = $this->db->get_row("SELECT * FROM #__downloads_files WHERE file_id = '". intval($_GET['file_id']) ."' AND user_id = '". USER_ID ."'")) a_error('Файл не найден');
+			break;
 		}
-		if(!isset($_POST['submit']) OR $this->error) {
-			$this->tpl->assign(array(
-				'error' => $this->error
-			));
-	
-			$this->tpl->display('add_file');
-		}
+		
+		$this->tpl->assign(array(
+			'error' => $this->error,
+			'directory' => $directory,
+			'action' => $action,
+			'title' => $title,
+			'file' => $file,
+			'navigation' => $navigation,
+		));
+
+		$this->tpl->display('add_file');
 	}
 }
 ?>
