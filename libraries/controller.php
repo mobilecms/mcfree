@@ -42,18 +42,18 @@ abstract class Controller {
 		$this->start = !empty($_GET['start']) ? intval($_GET['start']) : 0;
 		$this->start = is_numeric($_GET['page']) ? $_GET['page'] * $this->per_page - 1 : $this->start;
 		if ($this->start < 0) a_error('Не верный формат данных');
-        
+
 		// Подключение шаблонизатора
 		a_import('libraries/template');
 		$this->tpl = new Template;
-		
+
 		// Добавляем объект шаблона в Registry
 		Registry::set('tpl', $this->tpl);
-        
+
 		// Подключение кеширования
 		if ( ! class_exists('File_Cache')) a_import('libraries/file_cache');
 		$this->cache = new File_Cache(ROOT .'cache/file_cache');
-        
+
 		// Добавление мета данных на страницу
 		define('DESCRIPTION', $this->config['system']['description']);
 		define('KEYWORDS', $this->config['system']['keywords']);
@@ -62,7 +62,7 @@ abstract class Controller {
 		if ( ! empty($_SESSION['check_user_id'])) $user_id = $_SESSION['check_user_id'];
 		elseif ( ! empty($_SESSION['user_id'])) $user_id = $_SESSION['user_id'];
 		else $user_id = -1;
-        
+
 		// Авторизация гостей по COOKIES, добавление гостей в бд
 		if ($user_id == -1 && ! empty($_COOKIE['username'])) {
 			if ($try_user_id = $this->db->get_one("SELECT user_id FROM #__users WHERE username = '". a_safe($_COOKIE['username']) ."' AND password = '". md5(md5($_COOKIE['password'])) ."'")) {
@@ -70,11 +70,11 @@ abstract class Controller {
 				$_SESSION['user_id'] = $user_id;
 			}
 		}
-        
+
 		// Добавление гостей в бд
 		if ($user_id == -1) {
 			$user_agent = $_SERVER['HTTP_USER_AGENT'];
-            
+
 			// Проверяем наличие гостя в списке
 			if ($guest = $this->db->get_row("SELECT id FROM #__guests WHERE ip = '". $_SERVER['REMOTE_ADDR'] ."' AND user_agent = '". $user_agent ."'")) {
 				// Обновляем дату последнего посещения
@@ -90,21 +90,21 @@ abstract class Controller {
 					ip = '". a_safe($_SERVER['REMOTE_ADDR']) ."',
 					user_agent = '". a_safe($user_agent) ."',
 					last_time = UNIX_TIMESTAMP()
-				");     
+				");
 			}
 		}
-        
+
 		$this->user = $this->db->get_row("SELECT * FROM #__users LEFT JOIN #__users_profiles USING(user_id) WHERE user_id = $user_id");
-        
+
 		define('USER_ID', $this->user['user_id']);
 		$this->tpl->assign('user', $this->user);
-        
+
 		// Обновляем время последнего посещения
 		if (USER_ID != -1) $this->db->query("UPDATE #__users SET last_visit = UNIX_TIMESTAMP() WHERE user_id = '". USER_ID ."'");
-        
+
 		// Подключения помощника пользователей
 		a_import('modules/user/helpers/user');
-        
+
 		// Управление правами доступа
 		$this->access = a_load_class('libraries/access');
 
@@ -122,16 +122,16 @@ abstract class Controller {
 				a_error('У вас нет доступа к данной странице!');
 			}
 		}
-        
+
 		// Выполнение событий до вызова контроллера
 		main::events_exec(&$this->db, 'pre_controller');
-        
+
 		// Получение темы оформления, для админки
 		if ($this->template_theme == 'admin') {
 			$this->tpl->theme = $this->config['system']['admin_theme'];
 		}
 		// Использование Web темы
-		elseif (WEB_VERSION == '1') {            
+		elseif (WEB_VERSION == '1') {
 			if (USER_ID != -1) $this->tpl->theme = $this->user['theme'];
 			else $this->tpl->theme = $this->config['system']['web_theme'];
 		}
@@ -140,8 +140,13 @@ abstract class Controller {
 			if (USER_ID != -1 && file_exists(ROOT .'views/'. $this->user['theme'])) $this->tpl->theme = $this->user['theme'];
 			else $this->tpl->theme = $this->config['system']['default_theme'];
 		}
-        
+
 		define('THEME', $this->tpl->theme);
+
+		// Подключение класса мультиязычности
+		a_import('libraries/language');
+		$this->language = new Language;
+		Registry::set('language', $this->language);
 	}
 }
 ?>
