@@ -1,14 +1,23 @@
 <?php
 
+/**
+ * Класс мультиязычности
+ * @author Kirill Platonov <platonov.kd@gmail.com>
+ * @link http://uplato.ru
+ */
+
 class Language {
 	/**
 	 * Доступные языки с национальными названиями
 	 * @var array
 	 */
-	public $languages = array(
-		'en' => 'English',
-		'ru' => 'Русский',
-	);
+	public $languages = array();
+
+	/**
+	 * Кеширование языковых фраз (в секундах)
+	 * @var int
+	 */
+	public $cache = 0;
 
 	/**
 	 * Активный язык
@@ -23,6 +32,9 @@ class Language {
 	public $data = array();
 
 	public function __construct() {
+		// Получение массива языков
+		$this->get_languages();
+
 		// Определение активного языка
 		if ($_SESSION['language']) {
 			$this->set_language($_SESSION['language']);
@@ -37,7 +49,7 @@ class Language {
 		define('LANGUAGE', $this->language);
 
 		// Получение языковых фраз
-		$dir = opendir(ROOT .'/languages/'. $this->language);
+		$dir = opendir(ROOT .'languages/'. $this->language);
 
 		while ($file = readdir($dir)) {
 			if ($file == '.' OR $file == '..') continue;
@@ -134,6 +146,26 @@ class Language {
 		}
 
 		return $data;
+	}
+
+	/**
+	 * Получение массива доступных языков
+	 */
+	protected function get_languages() {
+		// Перебор файлов конфигурации языковых пакетов
+		$dir = opendir(ROOT .'languages');
+
+		while ($lang = readdir($dir)) {
+			// Проверка наличия файла конфигурации
+			if ( ! file_exists(ROOT .'languages/'. $lang .'/language.ini')) continue;
+
+			// Запись конфигурационных данных в массив
+			$config = parse_ini_file(ROOT .'languages/'. $lang .'/language.ini');
+
+			if (empty($config['name'])) continue;
+
+			$this->languages = array_merge($this->languages, array($lang => $config['name']));
+		}
 	}
 }
 
