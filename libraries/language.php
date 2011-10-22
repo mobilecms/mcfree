@@ -52,7 +52,7 @@ class Language {
 		$dir = opendir(ROOT .'languages/'. $this->language);
 
 		while ($file = readdir($dir)) {
-			if ($file == '.' OR $file == '..') continue;
+			if ($file == '.' OR $file == '..' OR $file == 'language.ini' OR $file == '.gitignore') continue;
 
 			$data = include_once ROOT .'/languages/'. $this->language .'/' . $file;
 
