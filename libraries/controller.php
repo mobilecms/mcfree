@@ -147,6 +147,9 @@ abstract class Controller {
 		a_import('libraries/language');
 		$this->language = new Language;
 		Registry::set('language', $this->language);
+
+		// Подключение помощника HTML
+		a_import('modules/html/helpers/html');
 	}
 }
 ?>
