@@ -11,7 +11,7 @@ class HTML {
 	 * @param array $params
 	 * @return mixed
 	 */
-    public static function image($name, $description = NULL, $params = array()) {
+	public static function image($name, $description = NULL, $params = array()) {
 		if (file_exists(ROOT .'themes/'. THEME .'/images/'. $name)) {
 			return '<img src="'. URL .'themes/'. THEME .'/images/'. $name .'" alt="'. $description .'" />';
 		}
