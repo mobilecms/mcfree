@@ -2,11 +2,6 @@
 
 <?php if ($error) echo '<div class="error">'. $error .'</div>' ?>
 
-<div class="menu">
-	Ещё нет аккаунта на сайте?<br />
-	<a href="<?php echo url('user/registration') ?>">Зарегистрируйся</a> прямо сейчас!
-</div>
-
 <?php $this->display('title', array('text' => 'Вход')) ?>
 
 <form action="<?php echo a_url('user/login') ?>" method="post">
@@ -14,10 +9,10 @@
 		Логин:<br />
 		<input name="username" class="input" type="text" value="<?php echo str_safe($_POST['username']) ?>" /><br />
 
-		Пароль:<br />
+		Пароль: (<a href="<?php echo url('user/forgot') ?>">забыли?</a>)<br />
 		<input name="password" type="password" /><br />
 	
-		<?php if ($_SESSION['login_errors'] > 0 && $_config['login_captcha'] == 1): ?>
+		<?php if ($_SESSION['login_errors'] > 0 AND $_config['login_captcha'] == 1): ?>
             Введите код с картинки:<br />
             <?php captcha(); ?>
             <input name="captcha_code" type="text" /><br />
@@ -31,7 +26,6 @@
 
 <div class="block">
 	<a href="<?php echo url('user/registration') ?>">Регистрация</a><br />
-	<a href="<?php echo url('user/forgot') ?>">Забыли пароль?</a><br />
 	<a href="<?php echo URL ?>">На главную</a>
 </div>
 

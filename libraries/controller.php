@@ -137,7 +137,7 @@ abstract class Controller {
 		}
 		else {
 			// Получение темы пользователя, если она существует
-			if (USER_ID != -1 && file_exists(ROOT .'views/'. $this->user['theme'])) $this->tpl->theme = $this->user['theme'];
+			if (USER_ID != -1 && file_exists(ROOT .'themes/'. $this->user['theme'])) $this->tpl->theme = $this->user['theme'];
 			else $this->tpl->theme = $this->config['system']['default_theme'];
 		}
 

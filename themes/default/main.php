@@ -8,7 +8,7 @@
 		<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
 		<meta name="description" content="<?php echo DESCRIPTION ?>" />
 		<meta name="keywords" content="<?php echo KEYWORDS ?>" />
-		<title><?php echo $GLOBALS['CONFIG']['system']['system_title'] ?> | <?php echo (!empty($title) ? $title : $sub_title) ?></title>
+		<title><?php echo $GLOBALS['CONFIG']['system']['system_title'] ?> | <?php echo (!empty($title) ? $title : $page['title']) ?></title>
 		<link rel="shortcut icon" href="<?php echo URL ?>/views/<?php echo THEME ?>/images/favicon.ico" />
 		<link rel="stylesheet" href="<?php echo URL ?>/views/<?php echo THEME ?>/css/default.css" type="text/css" />
 	</head>

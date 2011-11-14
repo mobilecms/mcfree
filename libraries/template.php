@@ -1,28 +1,15 @@
-<?php
-/**
- * MobileCMS
- *
- * Open source content management system for mobile sites
- *
- * @author MobileCMS Team <support@mobilecms.ru>
- * @copyright Copyright (c) 2011, MobileCMS Team
- * @link http://mobilecms.ru Official site
- * @license http://opensource.org/licenses/gpl-license.php GNU Public License
- */
+<?php defined('IN_SYSTEM') or die('Access denied');
 
-/**
- * Нативный шаблонизатор
- */
 class Template {
-        public $vars = array();
-        public $theme = 'default';
-        public $code_added = 0;
+	public $vars = array();
+	public $theme = 'default';
+	public $code_added = 0;
 
 	/**
 	* Construct
 	*/
 	public function __construct($template_dir = '', $cache_dir = ''){
-		$this->template_dir = ($template_dir ? $template_dir : ROOT .'views/');
+		$this->template_dir = ($template_dir ? $template_dir : ROOT .'themes/');
 	}
 
 	/**
@@ -30,7 +17,7 @@ class Template {
 	*/
 	public function parse($filename, $params = array()){
 		# Если не указано расширение файла, указываем его
-		if(!strstr($filename, '.tpl')) $filename .= '.tpl';
+		if(!strstr($filename, '.php')) $filename .= '.php';
 
 		# Определение дополнительных параметров
 		foreach($params AS $var => $var_value) {
@@ -57,19 +44,26 @@ class Template {
 			elseif(file_exists(ROOT . 'modules/'. ROUTE_MODULE .'/views/'. $alternative_theme .'/'. $filename)) {
 				$this->template_file = ROOT . 'modules/'. ROUTE_MODULE .'/views/'. $alternative_theme .'/'. $filename;
 			}
-			elseif(file_exists(ROOT .'/views/'. $this->theme .'/'. $filename)) {
-				$this->template_file = ROOT .'/views/'. $this->theme .'/'. $filename;
+			elseif(file_exists(ROOT .'/themes/'. $this->theme .'/'. $filename)) {
+				$this->template_file = ROOT .'/themes/'. $this->theme .'/'. $filename;
 			}
 			else die('Файл <b>'. $filename .'</b> не является шаблоном или не найден.');
 		}
 
-		# Создаем ссылки на переменные из общего массива, чтобы они были видны в шаблоне
+
+		
+
+
+		// Создание ссылок на переменные из общего массива, для отображения в шаблоне
 		extract($this->vars, EXTR_REFS);
 
+		// Получение содержимого страницы
 		ob_start();
-		include($this->template_file);     
-                $page_content = $this->add_code(ob_get_clean());
-		return $page_content;
+		include_once $this->template_file;
+		$content = $this->add_code(ob_get_clean());
+
+		// Вывод содержимого страницы в шаблоне
+		include_once ROOT .'themes/'. THEME .'/main.php';
 	}
 
 	/**

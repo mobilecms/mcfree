@@ -78,9 +78,9 @@ class User_Controller extends Controller {
 		redirect('user/profile/view.php?user_id='. $user_id);
 	}
 
-    /**
-     * Регистрация пользователей
-     */
+	/**
+	 * Регистрация пользователей
+	 */
 	public function action_registration() {
         // Перенаправление авторизированного пользователя
         if (is_user()) redirect('user/profile');
@@ -104,6 +104,7 @@ class User_Controller extends Controller {
             // Проверка e-mail на занятость
             if ($this->db->get_one("SELECT user_id FROM #__users WHERE email = '". a_safe($_POST['email']) ."'")) $this->error .= 'Указанный e-mail адрес уже занят<br />';
 
+			// Общая проверка заполнения
             if (empty($_POST['username']) || empty($_POST['email']) || empty($_POST['password']) || empty($_POST['password2'])) $this->error = 'Заполнены не все обязательные поля<br />';
 
             // Проверка кода с картинки
